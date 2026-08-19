@@ -1,0 +1,28 @@
+.DS_Store
+.idea/
+.vscode/
+
+# Logs
+*.log
+logs/
+
+# Java / Maven
+target/
+*.class
+
+# Node / Vite
+node_modules/
+dist/
+.npm-cache/
+
+# Environment files
+.env
+.env.*
+!.env.example
+application-local.yml
+application-*.local.yml
+
+# Temporary workspace output
+work/
+outputs/
+
