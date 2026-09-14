@@ -20,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
+// AssignmentRuleServiceImpl 属于智能客服平台基础代码。
 public class AssignmentRuleServiceImpl implements AssignmentRuleService {
 
     private final AssignmentRuleMapper assignmentRuleMapper;

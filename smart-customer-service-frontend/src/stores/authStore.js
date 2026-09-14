@@ -1,3 +1,4 @@
+// authStore.js 管理前端共享状态。
 const ACCESS_TOKEN_KEY = 'scs_access_token';
 const REFRESH_TOKEN_KEY = 'scs_refresh_token';
 const USER_KEY = 'scs_login_user';

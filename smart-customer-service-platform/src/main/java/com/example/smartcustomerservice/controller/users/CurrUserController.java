@@ -16,6 +16,7 @@ import java.util.List;
 @Tag(name = "当前用户信息")
 @RestController
 @RequestMapping(CommonConstants.API_PREFIX)
+// CurrUserController 属于智能客服平台基础代码。
 public class CurrUserController {
 
     private final CurrUserService currUserService;

@@ -2,6 +2,7 @@ package com.example.smartcustomerservice.domain.vo;
 
 import java.util.List;
 
+// CurrUserVO 属于智能客服平台基础代码。
 public class CurrUserVO {
 
     private Long id;

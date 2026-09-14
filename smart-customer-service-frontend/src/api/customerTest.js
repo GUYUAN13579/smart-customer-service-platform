@@ -1,3 +1,4 @@
+// customerTest.js 集中封装当前后端模块的前端请求。
 import { request } from './request';
 
 function buildForm(file, uploaderId) {
@@ -21,6 +22,15 @@ export const customerTestApi = {
   },
   sendMessage(id, data) {
     return request(`/api/v1/customer-test/conversations/${id}/messages`, { method: 'POST', body: data });
+  },
+  autoReply(id, data = {}) {
+    return request(`/api/v1/customer-test/conversations/${id}/auto-reply`, { method: 'POST', body: data });
+  },
+  ticketDraft(id, data = {}) {
+    return request(`/api/v1/customer-test/conversations/${id}/ticket-draft`, { method: 'POST', body: data });
+  },
+  manualTransfer(id, data = {}) {
+    return request(`/api/v1/customer-test/conversations/${id}/manual-transfer`, { method: 'POST', body: data });
   },
   uploadImage(file, uploaderId) {
     return request('/api/v1/customer-test/conversations/files/images/upload', {

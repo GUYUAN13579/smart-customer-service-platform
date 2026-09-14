@@ -22,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 
 @Service
+// RegisterServiceImpl 属于智能客服平台基础代码。
 public class RegisterServiceImpl implements RegisterService {
 
     private static final String DEFAULT_ROLE_CODE = "AGENT";
@@ -47,6 +48,7 @@ public class RegisterServiceImpl implements RegisterService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public RegisterUserVO register(RegisterRequest request) {
+        // 用户名在业务层先校验；生产环境还应通过数据库唯一索引兜底并发注册。
         Long sameUsernameCount = sysUserMapper.selectCount(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getUsername, request.getUsername())
                 .eq(SysUser::getDeleted, CommonConstants.NOT_DELETED));
@@ -68,6 +70,7 @@ public class RegisterServiceImpl implements RegisterService {
         user.setUpdatedAt(now);
         sysUserMapper.insert(user);
 
+        // 自助注册默认仅授予 AGENT，ADMIN、SUPERVISOR 等高权限角色只能由后台管理流程分配。
         bindDefaultRoleIfExists(user.getId(), now);
         saveRegisterAuditLog(user, now);
 
@@ -91,6 +94,7 @@ public class RegisterServiceImpl implements RegisterService {
     }
 
     private void saveRegisterAuditLog(SysUser user, LocalDateTime now) {
+        // 注册审计不记录密码或密码摘要，避免敏感认证信息落库到业务日志。
         AuditLog auditLog = new AuditLog();
         auditLog.setOperatorId(user.getId());
         auditLog.setAction("AUTH_REGISTER");

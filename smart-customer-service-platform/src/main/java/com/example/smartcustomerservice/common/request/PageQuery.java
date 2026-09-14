@@ -3,6 +3,7 @@ package com.example.smartcustomerservice.common.request;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 
+// PageQuery 属于智能客服平台基础代码。
 public class PageQuery {
 
     @Min(value = 1, message = "page 最小为 1")

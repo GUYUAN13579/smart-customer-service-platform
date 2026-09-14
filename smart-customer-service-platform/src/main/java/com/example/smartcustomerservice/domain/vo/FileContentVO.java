@@ -1,5 +1,6 @@
 package com.example.smartcustomerservice.domain.vo;
 
+// FileContentVO 属于智能客服平台基础代码。
 public class FileContentVO {
 
     private String originalName;

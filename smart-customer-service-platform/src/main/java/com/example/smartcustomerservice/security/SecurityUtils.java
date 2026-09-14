@@ -3,6 +3,7 @@ package com.example.smartcustomerservice.security;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+// SecurityUtils 属于智能客服平台基础代码。
 public final class SecurityUtils {
 
     private SecurityUtils() {

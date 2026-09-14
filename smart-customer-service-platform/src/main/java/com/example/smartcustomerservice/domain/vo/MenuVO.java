@@ -3,6 +3,7 @@ package com.example.smartcustomerservice.domain.vo;
 import java.util.ArrayList;
 import java.util.List;
 
+// MenuVO 属于智能客服平台基础代码。
 public class MenuVO {
 
     private Long id;

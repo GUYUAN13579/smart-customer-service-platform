@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+// AppSelect.vue 提供可复用的界面组件。
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const props = defineProps({

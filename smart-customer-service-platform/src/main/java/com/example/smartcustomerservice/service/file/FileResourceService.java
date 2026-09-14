@@ -4,6 +4,7 @@ import com.example.smartcustomerservice.domain.vo.FileContentVO;
 import com.example.smartcustomerservice.domain.vo.FileResourceVO;
 import org.springframework.web.multipart.MultipartFile;
 
+// FileResourceService 属于智能客服平台基础代码。
 public interface FileResourceService {
 
     FileResourceVO uploadFile(MultipartFile file, Long uploaderId);

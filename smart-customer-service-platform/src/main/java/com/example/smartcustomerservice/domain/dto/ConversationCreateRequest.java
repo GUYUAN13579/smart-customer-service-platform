@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 
+// ConversationCreateRequest 属于智能客服平台基础代码。
 public class ConversationCreateRequest {
 
     @NotNull(message = "客户ID不能为空")

@@ -1,5 +1,6 @@
 package com.example.smartcustomerservice.common.constants;
 
+// CommonConstants 属于智能客服平台基础代码。
 public final class CommonConstants {
 
     public static final String API_PREFIX = "/api/v1";

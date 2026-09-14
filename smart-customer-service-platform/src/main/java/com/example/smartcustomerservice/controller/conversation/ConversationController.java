@@ -5,12 +5,16 @@ import com.example.smartcustomerservice.common.result.ApiResult;
 import com.example.smartcustomerservice.common.result.PageResult;
 import com.example.smartcustomerservice.domain.dto.ConversationCloseRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationCreateRequest;
+import com.example.smartcustomerservice.domain.dto.ConversationManualTransferRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationMessageCreateRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationQueryRequest;
+import com.example.smartcustomerservice.domain.dto.ConversationResolveRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationTakeOverRequest;
 import com.example.smartcustomerservice.domain.vo.ConversationMessageVO;
 import com.example.smartcustomerservice.domain.vo.ConversationSessionVO;
+import com.example.smartcustomerservice.domain.vo.TicketVO;
 import com.example.smartcustomerservice.service.conversation.ConversationService;
+import com.example.smartcustomerservice.service.ticket.TicketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -30,12 +34,15 @@ import java.util.List;
 @Validated
 @RestController
 @RequestMapping(CommonConstants.API_PREFIX + "/conversations")
+// ConversationController 属于智能客服平台基础代码。
 public class ConversationController {
 
     private final ConversationService conversationService;
+    private final TicketService ticketService;
 
-    public ConversationController(ConversationService conversationService) {
+    public ConversationController(ConversationService conversationService, TicketService ticketService) {
         this.conversationService = conversationService;
+        this.ticketService = ticketService;
     }
 
     @Operation(summary = "创建会话")
@@ -80,6 +87,22 @@ public class ConversationController {
     public ApiResult<ConversationSessionVO> closeSession(@NotNull(message = "会话ID不能为空") @PathVariable Long id,
                                                          @Valid @RequestBody(required = false) ConversationCloseRequest request) {
         return ApiResult.success(conversationService.closeSession(id, request));
+    }
+
+    @Operation(summary = "确认问题已解决并关闭会话")
+    @PostMapping("/{id}/resolve")
+    @PreAuthorize("hasAuthority('conversation:close')")
+    public ApiResult<ConversationSessionVO> resolveSession(@NotNull(message = "会话ID不能为空") @PathVariable Long id,
+                                                            @Valid @RequestBody(required = false) ConversationResolveRequest request) {
+        return ApiResult.success(conversationService.resolveSession(id, request));
+    }
+
+    @Operation(summary = "转人工并创建待审核工单")
+    @PostMapping("/{id}/manual-transfer")
+    @PreAuthorize("hasAuthority('conversation:manual-transfer')")
+    public ApiResult<TicketVO> manualTransfer(@NotNull(message = "会话ID不能为空") @PathVariable Long id,
+                                              @Valid @RequestBody(required = false) ConversationManualTransferRequest request) {
+        return ApiResult.success(ticketService.manualTransfer(id, request));
     }
 
     @Operation(summary = "会话消息列表")

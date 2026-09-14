@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+// MybatisPlusConfig 属于智能客服平台基础代码。
 public class MybatisPlusConfig {
 
     @Bean

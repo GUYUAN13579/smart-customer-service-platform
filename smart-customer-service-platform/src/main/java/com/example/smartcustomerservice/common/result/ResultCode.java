@@ -1,5 +1,6 @@
 package com.example.smartcustomerservice.common.result;
 
+// ResultCode 属于智能客服平台基础代码。
 public enum ResultCode implements ErrorCode {
 
     SUCCESS(0, "success"),

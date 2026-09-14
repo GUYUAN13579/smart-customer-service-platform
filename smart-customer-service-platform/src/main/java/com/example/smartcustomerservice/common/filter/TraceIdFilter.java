@@ -13,6 +13,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 @Component
+// TraceIdFilter 属于智能客服平台基础代码。
 public class TraceIdFilter extends OncePerRequestFilter {
 
     @Override

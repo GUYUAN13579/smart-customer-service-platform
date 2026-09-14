@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("sys_role_permission")
+// SysRolePermission 属于智能客服平台基础代码。
 public class SysRolePermission {
 
     @TableId(type = IdType.AUTO)

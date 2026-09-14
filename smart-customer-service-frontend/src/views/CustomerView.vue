@@ -127,6 +127,7 @@
 </template>
 
 <script setup>
+// CustomerView.vue 渲染对应的业务工作台页面。
 import { onMounted, reactive, ref } from 'vue';
 import AppSelect from '../components/AppSelect.vue';
 import { customerApi } from '../api/customers';

@@ -16,6 +16,7 @@ import jakarta.validation.Valid;
 @Tag(name = "系统用户登陆")
 @RestController
 @RequestMapping(CommonConstants.API_PREFIX + "/auth")
+// SysLoginController 属于智能客服平台基础代码。
 public class SysLoginController {
     private final LoginService loginService;
 

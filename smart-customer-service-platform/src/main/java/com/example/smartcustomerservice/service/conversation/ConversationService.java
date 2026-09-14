@@ -5,12 +5,14 @@ import com.example.smartcustomerservice.domain.dto.ConversationCloseRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationCreateRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationMessageCreateRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationQueryRequest;
+import com.example.smartcustomerservice.domain.dto.ConversationResolveRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationTakeOverRequest;
 import com.example.smartcustomerservice.domain.vo.ConversationMessageVO;
 import com.example.smartcustomerservice.domain.vo.ConversationSessionVO;
 
 import java.util.List;
 
+// ConversationService 属于智能客服平台基础代码。
 public interface ConversationService {
 
     ConversationSessionVO createSession(ConversationCreateRequest request);
@@ -24,6 +26,8 @@ public interface ConversationService {
     ConversationSessionVO releaseTakeOverSession(Long id);
 
     ConversationSessionVO closeSession(Long id, ConversationCloseRequest request);
+
+    ConversationSessionVO resolveSession(Long id, ConversationResolveRequest request);
 
     List<ConversationMessageVO> listMessages(Long sessionId);
 

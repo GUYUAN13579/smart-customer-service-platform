@@ -5,6 +5,7 @@ import org.slf4j.MDC;
 
 import java.util.UUID;
 
+// TraceIdUtil 属于智能客服平台基础代码。
 public final class TraceIdUtil {
 
     private TraceIdUtil() {

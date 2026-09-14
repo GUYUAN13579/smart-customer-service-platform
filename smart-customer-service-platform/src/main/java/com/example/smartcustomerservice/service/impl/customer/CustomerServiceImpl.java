@@ -25,6 +25,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
+// CustomerServiceImpl 属于智能客服平台基础代码。
 public class CustomerServiceImpl implements CustomerService {
 
     private static final String DEFAULT_LEVEL = "NORMAL";

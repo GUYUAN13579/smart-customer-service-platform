@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
+// 覆盖注册、登录以及 refreshToken 和权限缓存写入 Redis 的真实集成链路。
 class LoginServiceRedisIntegrationTest {
 
     @Autowired
@@ -36,6 +37,7 @@ class LoginServiceRedisIntegrationTest {
 
     @Test
     void loginShouldReturnTokenAndSaveRefreshTokenAndPermissionsToRedis() throws Exception {
+        // 每次生成独立用户名，避免历史测试数据触发用户名唯一性校验。
         String suffix = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         String username = "test_" + suffix;
         String password = "12345678";

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 @Component
+// SecurityResponseWriter 属于智能客服平台基础代码。
 public class SecurityResponseWriter {
 
     private final ObjectMapper objectMapper;

@@ -1,3 +1,4 @@
+// main.js 属于 Vue 前端应用。
 import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';

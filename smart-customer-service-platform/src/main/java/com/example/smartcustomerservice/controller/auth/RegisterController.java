@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "认证注册")
 @RestController
 @RequestMapping(CommonConstants.API_PREFIX + "/auth")
+// RegisterController 属于智能客服平台基础代码。
 public class RegisterController {
 
     private final RegisterService registerService;

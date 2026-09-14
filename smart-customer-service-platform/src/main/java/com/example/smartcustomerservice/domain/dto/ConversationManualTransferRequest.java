@@ -1,0 +1,119 @@
+package com.example.smartcustomerservice.domain.dto;
+
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
+import java.math.BigDecimal;
+
+// ConversationManualTransferRequest 属于智能客服平台基础代码。
+public class ConversationManualTransferRequest {
+
+    @Pattern(regexp = "BUTTON|KEYWORD|AI_LOW_CONFIDENCE|CUSTOMER_EMOTION|OTHER", message = "转人工触发方式不合法")
+    private String triggerType;
+
+    @Size(max = 4000, message = "用户原始诉求最多4000个字符")
+    private String originalContent;
+
+    @Size(max = 500, message = "转人工原因最多500个字符")
+    private String transferReason;
+
+    @Size(max = 255, message = "工单标题最多255个字符")
+    private String title;
+
+    @Size(max = 5000, message = "工单内容最多5000个字符")
+    private String content;
+
+    @Size(max = 5000, message = "AI标准化总结最多5000个字符")
+    private String aiSummary;
+
+    @Size(max = 64, message = "问题分类最多64个字符")
+    private String category;
+
+    @Pattern(regexp = "P1|P2|P3|P4", message = "优先级只能是 P1、P2、P3 或 P4")
+    private String priority;
+
+    @Size(max = 5000, message = "AI建议处理动作最多5000个字符")
+    private String suggestedAction;
+
+    private BigDecimal aiConfidence;
+
+    public String getTriggerType() {
+        return triggerType;
+    }
+
+    public void setTriggerType(String triggerType) {
+        this.triggerType = triggerType;
+    }
+
+    public String getOriginalContent() {
+        return originalContent;
+    }
+
+    public void setOriginalContent(String originalContent) {
+        this.originalContent = originalContent;
+    }
+
+    public String getTransferReason() {
+        return transferReason;
+    }
+
+    public void setTransferReason(String transferReason) {
+        this.transferReason = transferReason;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public String getAiSummary() {
+        return aiSummary;
+    }
+
+    public void setAiSummary(String aiSummary) {
+        this.aiSummary = aiSummary;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
+
+    public String getSuggestedAction() {
+        return suggestedAction;
+    }
+
+    public void setSuggestedAction(String suggestedAction) {
+        this.suggestedAction = suggestedAction;
+    }
+
+    public BigDecimal getAiConfidence() {
+        return aiConfidence;
+    }
+
+    public void setAiConfidence(BigDecimal aiConfidence) {
+        this.aiConfidence = aiConfidence;
+    }
+}

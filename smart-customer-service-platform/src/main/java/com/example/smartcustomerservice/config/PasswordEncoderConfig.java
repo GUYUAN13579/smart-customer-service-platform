@@ -6,6 +6,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
+// PasswordEncoderConfig 属于智能客服平台基础代码。
 public class PasswordEncoderConfig {
 
     @Bean

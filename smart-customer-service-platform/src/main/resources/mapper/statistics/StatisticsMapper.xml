@@ -1,0 +1,236 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.example.smartcustomerservice.mapper.statistics.StatisticsMapper">
+    <select id="selectDashboardStatistics"
+            resultType="com.example.smartcustomerservice.domain.vo.DashboardStatisticsVO">
+        SELECT
+            DATE(#{dayStart}) AS stat_date,
+
+            /* 所有未逻辑删除的工单。 */
+            (SELECT COUNT(1)
+             FROM ticket t
+             WHERE t.deleted = 0) AS ticket_count,
+
+            /* 已关闭工单总量；RESOLVED 与 CLOSED 在业务上分别表示“已解决”和“已归档”。 */
+            (SELECT COUNT(1)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND t.status = 'CLOSED') AS closed_count,
+
+            /* 当日创建的会话需独立统计，不能通过 ticket JOIN，否则无工单会话会被遗漏。 */
+            (SELECT COUNT(1)
+             FROM conversation_session s
+             WHERE s.created_at <![CDATA[>=]]> #{dayStart}
+               AND s.created_at <![CDATA[<]]> #{dayEnd}) AS today_session_count,
+
+            (SELECT COUNT(1)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND t.created_at <![CDATA[>=]]> #{dayStart}
+               AND t.created_at <![CDATA[<]]> #{dayEnd}) AS today_ticket_count,
+
+            (SELECT COUNT(1)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND t.review_status = 'PENDING_REVIEW'
+               AND t.status = 'PENDING_REVIEW') AS pending_review_ticket_count,
+
+            (SELECT COUNT(1)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND t.review_status = 'APPROVED'
+               AND t.status = 'WAITING_ASSIGN') AS waiting_assign_ticket_count,
+
+            (SELECT COUNT(1)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND t.status = 'PROCESSING') AS processing_ticket_count,
+
+            /* 截止时间在未来 30 分钟内，且当前工单仍需要首响或解决的数量。 */
+            (SELECT COUNT(1)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND (
+                    (t.status IN ('ASSIGNED', 'PROCESSING')
+                     AND t.first_responded_at IS NULL
+                     AND t.first_response_deadline <![CDATA[>=]]> #{now}
+                     AND t.first_response_deadline <![CDATA[<=]]> DATE_ADD(#{now}, INTERVAL 30 MINUTE))
+                    OR
+                    (t.status NOT IN ('RESOLVED', 'CLOSED', 'REJECTED')
+                     AND t.resolve_deadline <![CDATA[>=]]> #{now}
+                     AND t.resolve_deadline <![CDATA[<=]]> DATE_ADD(#{now}, INTERVAL 30 MINUTE))
+               )) AS risk_ticket_count,
+
+            (SELECT COUNT(1)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND (
+                    (t.status IN ('ASSIGNED', 'PROCESSING')
+                     AND t.first_responded_at IS NULL
+                     AND t.first_response_deadline <![CDATA[<]]> #{now})
+                    OR
+                    (t.status NOT IN ('RESOLVED', 'CLOSED', 'REJECTED')
+                     AND t.resolve_deadline <![CDATA[<]]> #{now})
+               )) AS overdue_ticket_count,
+
+            /* 用秒计算再除以 60，保留分钟的小数精度。 */
+            (SELECT COALESCE(ROUND(AVG(TIMESTAMPDIFF(SECOND, t.created_at, t.first_responded_at)) / 60, 2), 0)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND t.first_responded_at IS NOT NULL) AS avg_first_response_minutes,
+
+            /* 当前没有“AI 独立解决”标记，暂以含 AI 摘要的已结案工单占所有已结案工单的比例作为辅助解决覆盖率。 */
+            (SELECT COALESCE(ROUND(
+                    SUM(CASE WHEN t.ai_summary IS NOT NULL AND t.ai_summary != '' THEN 1 ELSE 0 END)
+                    / NULLIF(COUNT(1), 0),
+                    4), 0)
+             FROM ticket t
+             WHERE t.deleted = 0
+               AND t.status IN ('RESOLVED', 'CLOSED')) AS ai_resolve_rate
+    </select>
+
+    <select id="selectAgentWorkloads"
+            resultType="com.example.smartcustomerservice.domain.vo.AgentWorkloadStatisticsVO">
+        SELECT sgm.id AS skill_group_member_id,
+               sg.id AS skill_group_id,
+               sg.group_name AS skill_group_name,
+               u.id AS user_id,
+               u.username,
+               u.real_name,
+               sgm.status AS member_status,
+               sgm.max_active_tickets,
+               SUM(CASE WHEN t.status = 'ASSIGNED' THEN 1 ELSE 0 END) AS assigned_ticket_count,
+               SUM(CASE WHEN t.status = 'PROCESSING' THEN 1 ELSE 0 END) AS processing_ticket_count,
+               COUNT(t.id) AS active_ticket_count,
+               COALESCE(ROUND(COUNT(t.id) / NULLIF(sgm.max_active_tickets, 0), 4), 0) AS workload_rate,
+               CASE WHEN sg.status = 1
+                           AND sgm.status = 1
+                           AND u.status = 1
+                           AND COUNT(t.id) <![CDATA[<]]> sgm.max_active_tickets
+                    THEN TRUE ELSE FALSE END AS available_for_assign
+        FROM skill_group_member sgm
+        JOIN skill_group sg ON sg.id = sgm.skill_group_id
+        JOIN sys_user u ON u.id = sgm.user_id AND u.deleted = 0
+        LEFT JOIN ticket t ON t.assignee_id = u.id
+                          AND t.deleted = 0
+                          AND t.status IN ('ASSIGNED', 'PROCESSING')
+        WHERE EXISTS (
+            SELECT 1
+            FROM sys_user_role ur
+            JOIN sys_role r ON r.id = ur.role_id
+            WHERE ur.user_id = u.id
+              AND r.role_code = 'AGENT'
+              AND r.status = 1
+        )
+        GROUP BY sgm.id, sg.id, sg.group_name, sg.status, u.id, u.username, u.real_name,
+                 u.status, sgm.status, sgm.max_active_tickets
+        ORDER BY available_for_assign DESC, workload_rate ASC, sgm.id ASC
+    </select>
+
+    <select id="selectTicketTrends"
+            resultType="com.example.smartcustomerservice.domain.vo.TicketTrendStatisticsVO">
+        SELECT stat_date,
+               SUM(created_ticket_count) AS created_ticket_count,
+               SUM(resolved_ticket_count) AS resolved_ticket_count,
+               SUM(closed_ticket_count) AS closed_ticket_count
+        FROM (
+            SELECT DATE(t.created_at) AS stat_date,
+                   COUNT(1) AS created_ticket_count,
+                   0 AS resolved_ticket_count,
+                   0 AS closed_ticket_count
+            FROM ticket t
+            WHERE t.deleted = 0
+              AND t.created_at <![CDATA[>=]]> #{startTime}
+              AND t.created_at <![CDATA[<]]> #{endTime}
+            GROUP BY DATE(t.created_at)
+
+            UNION ALL
+
+            SELECT DATE(l.created_at) AS stat_date,
+                   0 AS created_ticket_count,
+                   COUNT(DISTINCT l.ticket_id) AS resolved_ticket_count,
+                   0 AS closed_ticket_count
+            FROM ticket_operation_log l
+            WHERE l.deleted = 0
+              AND l.operation_type = 'RESOLVE'
+              AND l.created_at <![CDATA[>=]]> #{startTime}
+              AND l.created_at <![CDATA[<]]> #{endTime}
+            GROUP BY DATE(l.created_at)
+
+            UNION ALL
+
+            SELECT DATE(l.created_at) AS stat_date,
+                   0 AS created_ticket_count,
+                   0 AS resolved_ticket_count,
+                   COUNT(DISTINCT l.ticket_id) AS closed_ticket_count
+            FROM ticket_operation_log l
+            WHERE l.deleted = 0
+              AND l.operation_type = 'CLOSE'
+              AND l.created_at <![CDATA[>=]]> #{startTime}
+              AND l.created_at <![CDATA[<]]> #{endTime}
+            GROUP BY DATE(l.created_at)
+        ) trend
+        GROUP BY stat_date
+        ORDER BY stat_date ASC
+    </select>
+
+    <select id="selectSlaPerformance"
+            resultType="com.example.smartcustomerservice.domain.vo.SlaPerformanceStatisticsVO">
+        SELECT
+            COALESCE(SUM(CASE WHEN t.first_response_deadline IS NOT NULL
+                                     AND (t.first_responded_at IS NOT NULL OR t.first_response_deadline <![CDATA[<]]> #{now})
+                              THEN 1 ELSE 0 END), 0) AS first_response_evaluated_count,
+            COALESCE(SUM(CASE WHEN t.first_response_deadline IS NOT NULL
+                                     AND t.first_responded_at IS NOT NULL
+                                     AND t.first_responded_at <![CDATA[<=]]> t.first_response_deadline
+                              THEN 1 ELSE 0 END), 0) AS first_response_met_count,
+            COALESCE(SUM(CASE WHEN t.first_response_deadline IS NOT NULL
+                                     AND ((t.first_responded_at IS NOT NULL
+                                           AND t.first_responded_at <![CDATA[>]]> t.first_response_deadline)
+                                          OR (t.first_responded_at IS NULL
+                                              AND t.first_response_deadline <![CDATA[<]]> #{now}))
+                              THEN 1 ELSE 0 END), 0) AS first_response_breached_count,
+            COALESCE(ROUND(
+                SUM(CASE WHEN t.first_response_deadline IS NOT NULL
+                               AND t.first_responded_at IS NOT NULL
+                               AND t.first_responded_at <![CDATA[<=]]> t.first_response_deadline
+                         THEN 1 ELSE 0 END)
+                / NULLIF(SUM(CASE WHEN t.first_response_deadline IS NOT NULL
+                                         AND (t.first_responded_at IS NOT NULL OR t.first_response_deadline <![CDATA[<]]> #{now})
+                                  THEN 1 ELSE 0 END), 0), 4), 0) AS first_response_compliance_rate,
+
+            COALESCE(SUM(CASE WHEN t.resolve_deadline IS NOT NULL
+                                     AND (resolved.resolved_at IS NOT NULL OR t.resolve_deadline <![CDATA[<]]> #{now})
+                              THEN 1 ELSE 0 END), 0) AS resolve_evaluated_count,
+            COALESCE(SUM(CASE WHEN t.resolve_deadline IS NOT NULL
+                                     AND resolved.resolved_at IS NOT NULL
+                                     AND resolved.resolved_at <![CDATA[<=]]> t.resolve_deadline
+                              THEN 1 ELSE 0 END), 0) AS resolve_met_count,
+            COALESCE(SUM(CASE WHEN t.resolve_deadline IS NOT NULL
+                                     AND ((resolved.resolved_at IS NOT NULL
+                                           AND resolved.resolved_at <![CDATA[>]]> t.resolve_deadline)
+                                          OR (resolved.resolved_at IS NULL
+                                              AND t.resolve_deadline <![CDATA[<]]> #{now}))
+                              THEN 1 ELSE 0 END), 0) AS resolve_breached_count,
+            COALESCE(ROUND(
+                SUM(CASE WHEN t.resolve_deadline IS NOT NULL
+                               AND resolved.resolved_at IS NOT NULL
+                               AND resolved.resolved_at <![CDATA[<=]]> t.resolve_deadline
+                         THEN 1 ELSE 0 END)
+                / NULLIF(SUM(CASE WHEN t.resolve_deadline IS NOT NULL
+                                         AND (resolved.resolved_at IS NOT NULL OR t.resolve_deadline <![CDATA[<]]> #{now})
+                                  THEN 1 ELSE 0 END), 0), 4), 0) AS resolve_compliance_rate
+        FROM ticket t
+        LEFT JOIN (
+            SELECT ticket_id, MIN(created_at) AS resolved_at
+            FROM ticket_operation_log
+            WHERE deleted = 0 AND operation_type = 'RESOLVE'
+            GROUP BY ticket_id
+        ) resolved ON resolved.ticket_id = t.id
+        WHERE t.deleted = 0
+    </select>
+
+</mapper>

@@ -4,6 +4,7 @@ import com.example.smartcustomerservice.common.request.PageQuery;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+// ConversationQueryRequest 属于智能客服平台基础代码。
 public class ConversationQueryRequest extends PageQuery {
 
     @Size(max = 128, message = "关键词最多 128 位")

@@ -8,6 +8,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("customer")
+// Customer 属于智能客服平台基础代码。
 public class Customer {
 
     @TableId(type = IdType.AUTO)

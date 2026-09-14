@@ -3,6 +3,7 @@ package com.example.smartcustomerservice.config.properties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app.minio")
+// MinioProperties 属于智能客服平台基础代码。
 public class MinioProperties {
 
     private String endpoint;

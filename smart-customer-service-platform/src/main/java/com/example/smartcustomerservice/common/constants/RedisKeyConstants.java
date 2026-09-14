@@ -1,5 +1,6 @@
 package com.example.smartcustomerservice.common.constants;
 
+// RedisKeyConstants 属于智能客服平台基础代码。
 public final class RedisKeyConstants {
 
     public static final String PREFIX = "cs:";

@@ -3,6 +3,7 @@ package com.example.smartcustomerservice.common.result;
 import java.util.Collections;
 import java.util.List;
 
+// PageResult 属于智能客服平台基础代码。
 public class PageResult<T> {
 
     private List<T> records;

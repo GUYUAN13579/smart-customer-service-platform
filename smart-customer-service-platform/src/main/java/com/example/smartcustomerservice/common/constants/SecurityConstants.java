@@ -1,5 +1,6 @@
 package com.example.smartcustomerservice.common.constants;
 
+// SecurityConstants 属于智能客服平台基础代码。
 public final class SecurityConstants {
 
     public static final String AUTHORIZATION_HEADER = "Authorization";

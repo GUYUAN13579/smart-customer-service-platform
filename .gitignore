@@ -9,6 +9,8 @@ logs/
 # Java / Maven
 target/
 *.class
+.m2/
+.tools/
 
 # Node / Vite
 node_modules/
@@ -25,4 +27,3 @@ application-*.local.yml
 # Temporary workspace output
 work/
 outputs/
-

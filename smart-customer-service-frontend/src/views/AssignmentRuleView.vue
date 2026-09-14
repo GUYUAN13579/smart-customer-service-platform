@@ -101,6 +101,7 @@
 </template>
 
 <script setup>
+// AssignmentRuleView.vue 渲染对应的业务工作台页面。
 import { onMounted, reactive, ref } from 'vue';
 import AppSelect from '../components/AppSelect.vue';
 import { assignmentRuleApi } from '../api/assignmentRules';

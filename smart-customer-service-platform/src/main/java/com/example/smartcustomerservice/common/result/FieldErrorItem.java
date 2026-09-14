@@ -1,5 +1,6 @@
 package com.example.smartcustomerservice.common.result;
 
+// FieldErrorItem 属于智能客服平台基础代码。
 public class FieldErrorItem {
 
     private String field;

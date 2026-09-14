@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("conversation_session")
+// ConversationSession 属于智能客服平台基础代码。
 public class ConversationSession {
 
     @TableId(type = IdType.AUTO)

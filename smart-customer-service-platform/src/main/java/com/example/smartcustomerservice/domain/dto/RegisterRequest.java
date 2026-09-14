@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+// RegisterRequest 属于智能客服平台基础代码。
 public class RegisterRequest {
 
     @NotBlank(message = "用户名不能为空")

@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("assignment_rule")
+// AssignmentRule 属于智能客服平台基础代码。
 public class AssignmentRule {
 
     @TableId(type = IdType.AUTO)

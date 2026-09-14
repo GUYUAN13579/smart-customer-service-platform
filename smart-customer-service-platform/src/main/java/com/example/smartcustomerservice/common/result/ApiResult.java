@@ -4,6 +4,7 @@ import com.example.smartcustomerservice.common.util.TraceIdUtil;
 
 import java.time.LocalDateTime;
 
+// ApiResult 属于智能客服平台基础代码。
 public class ApiResult<T> {
 
     private Integer code;

@@ -5,6 +5,7 @@ import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
+// AssignmentRuleQueryRequest 属于智能客服平台基础代码。
 public class AssignmentRuleQueryRequest extends PageQuery {
 
     @Size(max = 128, message = "关键词最多 128 位")

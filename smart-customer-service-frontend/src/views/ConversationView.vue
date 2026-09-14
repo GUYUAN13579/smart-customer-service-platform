@@ -4,9 +4,9 @@
       <div>
         <p class="eyebrow">Conversation Hub</p>
         <h2>会话中心</h2>
-        <p>处理客户咨询、查看聊天历史，并支持图片和文件消息发送。</p>
+        <p>统一处理在线会话、人工接管、客户回复、AI 辅助和转工单流转。</p>
       </div>
-      <button class="primary-button" @click="openCreate">创建会话</button>
+      <button class="ghost-button" @click="loadSessions">刷新队列</button>
     </div>
 
     <div class="conversation-shell">
@@ -46,7 +46,7 @@
           </button>
           <div v-if="!sessions.length && !loadingSessions" class="empty-state small-empty">
             <strong>暂无会话</strong>
-            <span>创建会话后会出现在这里。</span>
+            <span>新的客户咨询会进入这里。</span>
           </div>
           <div v-if="loadingSessions" class="empty-state small-empty">
             <strong>正在加载会话...</strong>
@@ -65,12 +65,13 @@
           <div>
             <p class="eyebrow">{{ activeSession.channel || 'WEB' }}</p>
             <h3>{{ activeSession.sessionNo || `会话 #${activeSession.id}` }}</h3>
-            <span>客户 {{ activeSession.customerId }} · {{ activeSession.status || 'ACTIVE' }}</span>
+            <span>客户 {{ activeSession.customerId }} · {{ activeSession.channel || 'WEB' }}</span>
           </div>
           <div class="chat-head-actions">
             <span class="status-pill" :class="{ off: activeSession.status === 'CLOSED' }">{{ activeSession.status || 'ACTIVE' }}</span>
             <button v-if="canTakeOver" class="primary-button" :disabled="actionLoading" @click="takeOverActive">接管</button>
             <button v-if="canRelease" class="ghost-button" :disabled="actionLoading" @click="releaseActive">退出接管</button>
+            <button v-if="canResolveSession" class="primary-button" :disabled="actionLoading" @click="resolveActive">问题已解决</button>
             <button v-if="activeSession.status !== 'CLOSED'" class="danger-button" :disabled="actionLoading" @click="openClose">关闭</button>
             <button class="ghost-button" @click="loadMessages">同步消息</button>
           </div>
@@ -127,8 +128,8 @@
         </div>
 
         <div v-else class="chat-placeholder">
-          <strong>选择或创建一个会话</strong>
-          <span>会话打开后，这里会显示完整聊天记录和发送工具。</span>
+          <strong>选择一个会话</strong>
+          <span>会话打开后，这里会显示完整聊天记录、发送工具和处理动作。</span>
         </div>
 
         <form v-if="canSendMessage" class="composer" @submit.prevent="sendAll">
@@ -156,7 +157,6 @@
                 文件
                 <input type="file" multiple @change="pickFiles" />
               </label>
-              <AppSelect v-model="senderType" :options="senderOptions" />
             </div>
             <button class="primary-button" :disabled="sending || (!composerText && !pendingFiles.length)">
               {{ sending ? '发送中...' : '发送' }}
@@ -184,10 +184,92 @@
         <div v-if="activeSession" class="detail-actions">
           <button v-if="canTakeOver" class="primary-button" :disabled="actionLoading" @click="takeOverActive">接管会话</button>
           <button v-if="canRelease" class="ghost-button" :disabled="actionLoading" @click="releaseActive">退出接管</button>
+          <button v-if="canResolveSession" class="primary-button" :disabled="actionLoading" @click="resolveActive">问题已解决</button>
           <button v-if="activeSession.status !== 'CLOSED'" class="danger-button" :disabled="actionLoading" @click="openClose">关闭会话</button>
         </div>
         <div v-else class="empty-state small-empty">
           <strong>没有会话资料</strong>
+        </div>
+
+        <div v-if="activeSession" class="ai-assist-panel">
+          <div class="ai-assist-head">
+            <div>
+              <p class="eyebrow">AI Assist</p>
+              <h3>辅助回答</h3>
+            </div>
+            <button class="ghost-button" :disabled="aiLoading || !aiDraftText" @click="clearAiAssist">清空</button>
+          </div>
+
+          <textarea
+            v-model.trim="aiDraftText"
+            rows="4"
+            placeholder="输入希望 AI 帮你生成的回复方向"
+            @keydown.enter.meta.prevent="generateAiReply"
+            @keydown.enter.ctrl.prevent="generateAiReply"
+          ></textarea>
+
+          <div v-if="pendingFiles.length" class="ai-attachment-note">
+            将携带当前待发送附件：{{ pendingFiles.map((item) => item.name).join('、') }}
+          </div>
+
+          <div class="ai-assist-actions">
+            <button class="primary-button" :disabled="aiLoading || !aiDraftText" @click="generateAiReply">
+              {{ aiLoading ? '生成中...' : '生成建议' }}
+            </button>
+            <button class="ghost-button" :disabled="!aiAnswer" @click="applyAiAnswer">填入发送框</button>
+          </div>
+
+          <div v-if="aiAnswer" class="ai-answer-box">
+            <strong>AI 建议</strong>
+            <p>{{ aiAnswer }}</p>
+            <div v-if="aiReferences.length" class="ai-knowledge-references">
+              <span>知识依据</span>
+              <button v-for="reference in aiReferences" :key="reference.chunkId" type="button" @click="showKnowledgeReference(reference)">
+                {{ reference.sourceTitle || `知识片段 #${reference.chunkId}` }}
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="activeSession" class="ai-assist-panel">
+          <div class="ai-assist-head">
+            <div>
+              <p class="eyebrow">Ticket Draft</p>
+              <h3>AI 工单草稿</h3>
+            </div>
+            <button class="ghost-button" :disabled="ticketDraftLoading" @click="clearTicketDraft">清空</button>
+          </div>
+
+          <textarea
+            v-model.trim="ticketDraftExtra"
+            rows="3"
+            placeholder="可选：补充工单生成要求，例如重点关注退款诉求"
+          ></textarea>
+
+          <div class="ai-assist-actions">
+            <button class="primary-button" :disabled="ticketDraftLoading" @click="generateTicketDraft">
+              {{ ticketDraftLoading ? '生成中...' : '生成草稿' }}
+            </button>
+            <button class="ghost-button" :disabled="ticketDraftLoading || !ticketDraft" @click="createPendingReviewTicket">
+              创建待审核工单
+            </button>
+          </div>
+
+          <div v-if="ticketDraft" class="ticket-draft-box">
+            <div><span>标题</span><strong>{{ ticketDraft.title || '-' }}</strong></div>
+            <div><span>分类</span><strong>{{ ticketDraft.category || 'UNKNOWN' }}</strong></div>
+            <div><span>优先级</span><strong>{{ ticketDraft.priority || 'P3' }}</strong></div>
+            <div><span>置信度</span><strong>{{ ticketDraft.aiConfidence ?? '-' }}</strong></div>
+            <p><span>用户原始诉求</span>{{ ticketDraft.originalContent || '-' }}</p>
+            <p><span>AI 标准化总结</span>{{ ticketDraft.aiSummary || '-' }}</p>
+            <p><span>建议处理动作</span>{{ ticketDraft.suggestedAction || '-' }}</p>
+            <div v-if="ticketDraft.knowledgeReferences?.length" class="ai-knowledge-references">
+              <span>知识依据</span>
+              <button v-for="reference in ticketDraft.knowledgeReferences" :key="reference.chunkId" type="button" @click="showKnowledgeReference(reference)">
+                {{ reference.sourceTitle || `知识片段 #${reference.chunkId}` }}
+              </button>
+            </div>
+          </div>
         </div>
 
         <p v-if="notice" class="success-text">{{ notice }}</p>
@@ -236,10 +318,12 @@
 </template>
 
 <script setup>
+// ConversationView.vue 渲染对应的业务工作台页面。
 import { computed, nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import AppSelect from '../components/AppSelect.vue';
 import { conversationApi } from '../api/conversations';
 import { fileApi } from '../api/files';
+import { aiApi } from '../api/ai';
 import { authStore } from '../stores/authStore';
 
 const activeSession = ref(null);
@@ -248,7 +332,11 @@ const messages = ref([]);
 const pendingFiles = ref([]);
 const lookupId = ref(null);
 const composerText = ref('');
-const senderType = ref('AGENT');
+const aiDraftText = ref('');
+const aiAnswer = ref('');
+const aiReferences = ref([]);
+const ticketDraftExtra = ref('');
+const ticketDraft = ref(null);
 const notice = ref('');
 const error = ref('');
 const createVisible = ref(false);
@@ -257,6 +345,8 @@ const sending = ref(false);
 const loadingMessages = ref(false);
 const loadingSessions = ref(false);
 const actionLoading = ref(false);
+const aiLoading = ref(false);
+const ticketDraftLoading = ref(false);
 const closeVisible = ref(false);
 const messageScroller = ref(null);
 const refreshTimer = ref(null);
@@ -276,12 +366,6 @@ const statusOptions = [
   { label: '已接管 TAKEN_OVER', value: 'TAKEN_OVER' },
   { label: '已关闭 CLOSED', value: 'CLOSED' }
 ];
-const senderOptions = [
-  { label: '客服 AGENT', value: 'AGENT' },
-  { label: '客户 CUSTOMER', value: 'CUSTOMER' },
-  { label: 'AI 助手', value: 'AI' }
-];
-
 const currentUser = computed(() => authStore.getUser() || {});
 const totalSessionPages = computed(() => Math.max(1, Math.ceil(sessionPage.total / query.size)));
 const canTakeOver = computed(() => activeSession.value && activeSession.value.status !== 'CLOSED' && activeSession.value.status !== 'TAKEN_OVER');
@@ -291,6 +375,7 @@ const canRelease = computed(() => activeSession.value
 const canSendMessage = computed(() => activeSession.value
   && activeSession.value.status === 'TAKEN_OVER'
   && String(activeSession.value.currentAgentId) === String(currentUser.value.id));
+const canResolveSession = computed(() => canSendMessage.value);
 const composerLockedTitle = computed(() => {
   if (!activeSession.value) return '';
   if (activeSession.value.status === 'CLOSED') return '会话已关闭';
@@ -401,6 +486,7 @@ async function selectSession(item) {
 async function openSession(session, refreshList = true) {
   activeSession.value = session;
   lookupId.value = session.id;
+  clearAiAssist();
   await loadMessages();
   if (refreshList) {
     mergeSession(session);
@@ -475,6 +561,24 @@ async function closeActive() {
   }
 }
 
+async function resolveActive() {
+  if (!activeSession.value?.id) return;
+  actionLoading.value = true;
+  error.value = '';
+  notice.value = '';
+  try {
+    const data = await conversationApi.resolve(activeSession.value.id);
+    activeSession.value = data;
+    mergeSession(data);
+    notice.value = '已确认问题解决，关联工单与会话已关闭';
+    await loadMessages();
+  } catch (err) {
+    error.value = err.message || '确认问题解决失败';
+  } finally {
+    actionLoading.value = false;
+  }
+}
+
 async function loadMessages() {
   if (!activeSession.value?.id) return;
   loadingMessages.value = true;
@@ -533,9 +637,9 @@ async function sendAll() {
   sending.value = true;
   try {
     for (const item of pendingFiles.value) {
-      const uploaded = item.messageType === 'IMAGE'
+      const uploaded = item.uploadedForAi || (item.messageType === 'IMAGE'
         ? await fileApi.uploadImage(item.file, currentUser.value.id)
-        : await fileApi.uploadFile(item.file, currentUser.value.id);
+        : await fileApi.uploadFile(item.file, currentUser.value.id));
       await sendConversationMessage(item.messageType, JSON.stringify(uploaded));
     }
     if (composerText.value) {
@@ -553,19 +657,120 @@ async function sendAll() {
   }
 }
 
+async function generateAiReply() {
+  if (!activeSession.value?.id || !aiDraftText.value || aiLoading.value) return;
+  aiLoading.value = true;
+  error.value = '';
+  notice.value = '';
+  try {
+    const fileIds = await uploadPendingFilesForAi();
+    const data = await aiApi.chat({
+      sessionId: activeSession.value.id,
+      question: aiDraftText.value,
+      fileIds
+    });
+    aiAnswer.value = data?.answer || '';
+    aiReferences.value = data?.knowledgeReferences || [];
+    notice.value = 'AI 建议已生成';
+  } catch (err) {
+    error.value = err.message || 'AI 建议生成失败';
+  } finally {
+    aiLoading.value = false;
+  }
+}
+
+async function uploadPendingFilesForAi() {
+  const fileIds = [];
+  for (const item of pendingFiles.value) {
+    if (!item.uploadedForAi) {
+      item.uploadedForAi = item.messageType === 'IMAGE'
+        ? await fileApi.uploadImage(item.file, currentUser.value.id)
+        : await fileApi.uploadFile(item.file, currentUser.value.id);
+    }
+    const fileId = item.uploadedForAi?.id || item.uploadedForAi?.fileId;
+    if (fileId) {
+      fileIds.push(fileId);
+    }
+  }
+  return fileIds;
+}
+
+function applyAiAnswer() {
+  if (!aiAnswer.value) return;
+  composerText.value = aiAnswer.value;
+}
+
+function clearAiAssist() {
+  aiDraftText.value = '';
+  aiAnswer.value = '';
+  aiReferences.value = [];
+  clearTicketDraft();
+}
+
+function clearTicketDraft() {
+  ticketDraftExtra.value = '';
+  ticketDraft.value = null;
+}
+
+function showKnowledgeReference(reference) {
+  notice.value = `知识来源：${reference.sourceTitle || '未命名知识'}\n${reference.content || ''}`;
+  error.value = '';
+}
+
+async function generateTicketDraft() {
+  if (!activeSession.value?.id || ticketDraftLoading.value) return;
+  ticketDraftLoading.value = true;
+  error.value = '';
+  notice.value = '';
+  try {
+    const fileIds = await uploadPendingFilesForAi();
+    ticketDraft.value = await aiApi.ticketDraft(activeSession.value.id, {
+      extraRequirement: ticketDraftExtra.value,
+      fileIds
+    });
+    notice.value = 'AI 工单草稿已生成';
+  } catch (err) {
+    error.value = err.message || '生成工单草稿失败';
+  } finally {
+    ticketDraftLoading.value = false;
+  }
+}
+
+async function createPendingReviewTicket() {
+  if (!activeSession.value?.id || !ticketDraft.value || ticketDraftLoading.value) return;
+  ticketDraftLoading.value = true;
+  error.value = '';
+  notice.value = '';
+  try {
+    const created = await conversationApi.manualTransfer(activeSession.value.id, {
+      triggerType: 'OTHER',
+      transferReason: '客服根据 AI 工单草稿创建待审核工单',
+      originalContent: ticketDraft.value.originalContent,
+      title: ticketDraft.value.title,
+      content: ticketDraft.value.aiSummary || ticketDraft.value.originalContent,
+      aiSummary: ticketDraft.value.aiSummary,
+      category: ticketDraft.value.category,
+      priority: ticketDraft.value.priority,
+      suggestedAction: ticketDraft.value.suggestedAction,
+      aiConfidence: ticketDraft.value.aiConfidence
+    });
+    notice.value = `待审核工单已创建：${created.ticketNo || created.id}`;
+    await refreshActive();
+    await loadMessages();
+  } catch (err) {
+    error.value = err.message || '创建待审核工单失败';
+  } finally {
+    ticketDraftLoading.value = false;
+  }
+}
+
 function sendConversationMessage(messageType, content) {
   return conversationApi.sendMessage(activeSession.value.id, {
-    senderType: senderType.value,
-    senderId: senderId(),
+    senderType: 'AGENT',
+    senderId: currentUser.value.id || null,
     messageType,
     content
   });
-}
-
-function senderId() {
-  if (senderType.value === 'AGENT') return currentUser.value.id || null;
-  if (senderType.value === 'CUSTOMER') return activeSession.value?.customerId || null;
-  return null;
 }
 
 function messageSide(item) {

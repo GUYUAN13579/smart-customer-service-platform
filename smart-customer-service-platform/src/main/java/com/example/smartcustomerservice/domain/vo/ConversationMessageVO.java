@@ -3,6 +3,7 @@ package com.example.smartcustomerservice.domain.vo;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+// ConversationMessageVO 属于智能客服平台基础代码。
 public class ConversationMessageVO {
 
     private Long id;

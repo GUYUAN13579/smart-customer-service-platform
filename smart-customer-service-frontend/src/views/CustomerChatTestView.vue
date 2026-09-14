@@ -32,8 +32,15 @@
           <div><dt>会话ID</dt><dd>{{ session.id }}</dd></div>
           <div><dt>会话编号</dt><dd>{{ session.sessionNo }}</dd></div>
           <div><dt>状态</dt><dd>{{ session.status }}</dd></div>
+          <div><dt>AI启用</dt><dd>{{ isAiEnabled(session) ? '是' : '否' }}</dd></div>
           <div><dt>客服ID</dt><dd>{{ session.currentAgentId || '等待客服接管' }}</dd></div>
         </dl>
+
+        <div v-if="session && session.status !== 'CLOSED'" class="detail-actions customer-test-actions">
+          <button class="ghost-button" :disabled="manualTransferLoading" @click="requestManualTransfer">
+            {{ manualTransferLoading ? '处理中...' : '转人工' }}
+          </button>
+        </div>
       </aside>
 
       <main class="panel customer-chat-main">
@@ -121,6 +128,7 @@
 </template>
 
 <script setup>
+// CustomerChatTestView.vue 渲染对应的业务工作台页面。
 import { nextTick, onMounted, onUnmounted, reactive, ref } from 'vue';
 import AppSelect from '../components/AppSelect.vue';
 import { customerTestApi } from '../api/customerTest';
@@ -132,6 +140,7 @@ const lookupId = ref(null);
 const composerText = ref('');
 const creating = ref(false);
 const sending = ref(false);
+const manualTransferLoading = ref(false);
 const notice = ref('');
 const error = ref('');
 const messageScroller = ref(null);
@@ -213,10 +222,16 @@ async function sendAll() {
   sending.value = true;
   clearTip();
   try {
+    const latestQuestion = composerText.value;
+    const uploadedFileIds = [];
     for (const item of pendingFiles.value) {
       const uploaded = item.messageType === 'IMAGE'
         ? await customerTestApi.uploadImage(item.file, session.value.customerId)
         : await customerTestApi.uploadFile(item.file, session.value.customerId);
+      const fileId = uploaded?.id || uploaded?.fileId;
+      if (fileId) {
+        uploadedFileIds.push(fileId);
+      }
       await sendMessage(item.messageType, JSON.stringify(uploaded));
     }
     if (composerText.value) {
@@ -227,11 +242,74 @@ async function sendAll() {
     session.value = await customerTestApi.detail(session.value.id);
     await loadMessages();
     notice.value = '发送成功';
+    await autoReplyIfNeeded(latestQuestion, uploadedFileIds);
   } catch (err) {
     error.value = err.message || '发送失败';
   } finally {
     sending.value = false;
   }
+}
+
+async function autoReplyIfNeeded(customerQuestion, fileIds = []) {
+  if (!canAutoReply(session.value)) return;
+  try {
+    await customerTestApi.autoReply(session.value.id, {
+      customerQuestion,
+      fileIds
+    });
+    session.value = await customerTestApi.detail(session.value.id);
+    await loadMessages();
+    notice.value = 'AI 已自动回复';
+  } catch (err) {
+    error.value = err.message || 'AI 自动回复失败';
+  }
+}
+
+function canAutoReply(currentSession) {
+  return Boolean(currentSession?.id)
+    && isAiEnabled(currentSession)
+    && String(currentSession.status || 'ACTIVE').toUpperCase() === 'ACTIVE';
+}
+
+function isAiEnabled(currentSession) {
+  const value = currentSession?.aiEnabled;
+  return value === 1 || value === '1' || value === true || value === 'true';
+}
+
+async function requestManualTransfer() {
+  if (!session.value?.id || manualTransferLoading.value) return;
+  manualTransferLoading.value = true;
+  clearTip();
+  try {
+    const draft = await customerTestApi.ticketDraft(session.value.id, {
+      originalContent: latestCustomerMessage(),
+      extraRequirement: '用户主动申请转人工，请生成待审核工单草稿'
+    });
+    const ticket = await customerTestApi.manualTransfer(session.value.id, {
+      triggerType: 'BUTTON',
+      transferReason: '用户点击转人工',
+      originalContent: draft.originalContent || latestCustomerMessage(),
+      title: draft.title,
+      content: draft.aiSummary || draft.originalContent,
+      aiSummary: draft.aiSummary,
+      category: draft.category,
+      priority: draft.priority,
+      suggestedAction: draft.suggestedAction,
+      aiConfidence: draft.aiConfidence
+    });
+    session.value = await customerTestApi.detail(session.value.id);
+    await loadMessages();
+    notice.value = `已提交转人工申请，待审核工单：${ticket.ticketNo || ticket.id}`;
+  } catch (err) {
+    error.value = err.message || '转人工失败';
+  } finally {
+    manualTransferLoading.value = false;
+  }
+}
+
+function latestCustomerMessage() {
+  const customerMessages = messages.value.filter((item) => item.senderType === 'CUSTOMER' && item.messageType === 'TEXT');
+  return customerMessages.length ? customerMessages[customerMessages.length - 1].content : '';
 }
 
 function sendMessage(messageType, content) {

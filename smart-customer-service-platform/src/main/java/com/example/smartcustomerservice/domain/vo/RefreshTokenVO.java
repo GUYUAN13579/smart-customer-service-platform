@@ -2,6 +2,7 @@ package com.example.smartcustomerservice.domain.vo;
 
 import java.time.LocalDateTime;
 
+// RefreshTokenVO 属于智能客服平台基础代码。
 public class RefreshTokenVO {
 
     private String accessToken;

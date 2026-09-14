@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Data;
 
 @Data
+// LoginRequest 属于智能客服平台基础代码。
 public class LoginRequest {
 
     @NotBlank(message = "用户名不能为空")

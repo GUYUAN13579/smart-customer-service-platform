@@ -22,6 +22,7 @@
 </template>
 
 <script setup>
+// RegisterView.vue 渲染对应的业务工作台页面。
 import { reactive, ref } from 'vue';
 import { authApi } from '../api/auth';
 

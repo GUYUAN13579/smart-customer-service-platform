@@ -6,6 +6,7 @@ import com.example.smartcustomerservice.domain.dto.AssignmentRuleQueryRequest;
 import com.example.smartcustomerservice.domain.dto.AssignmentRuleUpdateRequest;
 import com.example.smartcustomerservice.domain.vo.AssignmentRuleVO;
 
+// AssignmentRuleService 属于智能客服平台基础代码。
 public interface AssignmentRuleService {
 
     AssignmentRuleVO createRule(AssignmentRuleCreateRequest request);

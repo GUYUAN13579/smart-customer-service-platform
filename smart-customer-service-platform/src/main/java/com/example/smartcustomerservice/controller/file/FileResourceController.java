@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 @Validated
 @RestController
 @RequestMapping(CommonConstants.API_PREFIX + "/files")
+// FileResourceController 属于智能客服平台基础代码。
 public class FileResourceController {
 
     private final FileResourceService fileResourceService;

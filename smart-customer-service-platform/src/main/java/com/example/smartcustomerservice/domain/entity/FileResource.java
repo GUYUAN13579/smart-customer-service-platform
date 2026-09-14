@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("file_resource")
+// FileResource 属于智能客服平台基础代码。
 public class FileResource {
 
     @TableId(type = IdType.AUTO)

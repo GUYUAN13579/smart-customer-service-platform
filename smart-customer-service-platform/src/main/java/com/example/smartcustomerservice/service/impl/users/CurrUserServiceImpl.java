@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Objects;
 
 @Service
+// CurrUserServiceImpl 属于智能客服平台基础代码。
 public class CurrUserServiceImpl implements CurrUserService {
 
     private static final String MENU_RESOURCE_TYPE = "MENU";

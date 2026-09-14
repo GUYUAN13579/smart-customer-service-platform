@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+// CustomerUpdateRequest 属于智能客服平台基础代码。
 public class CustomerUpdateRequest {
 
     private Long id;

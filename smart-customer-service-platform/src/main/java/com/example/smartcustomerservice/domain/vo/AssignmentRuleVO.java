@@ -2,6 +2,7 @@ package com.example.smartcustomerservice.domain.vo;
 
 import java.time.LocalDateTime;
 
+// AssignmentRuleVO 属于智能客服平台基础代码。
 public class AssignmentRuleVO {
 
     private Long id;

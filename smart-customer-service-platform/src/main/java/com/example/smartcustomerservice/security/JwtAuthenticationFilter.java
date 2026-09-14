@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 @Component
+// JwtAuthenticationFilter 属于智能客服平台基础代码。
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtTokenProvider jwtTokenProvider;
@@ -45,6 +46,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
+            // refreshToken 只用于换取新的 accessToken，不能被当作业务接口凭证使用。
+            // 在过滤器层直接拒绝可以避免 refreshToken 被误放入 SecurityContext。
             if (!jwtTokenProvider.isAccessToken(token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 return;
@@ -53,6 +56,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             Long userId = jwtTokenProvider.getUserId(token);
             String username = jwtTokenProvider.getUsername(token);
             List<String> roleCodes = jwtTokenProvider.getRoleCodes(token);
+            // 认证阶段只解析轻量身份信息；权限从 Redis 读取，避免每个请求重复查询
+            // user-role-permission 三张关联表。缓存缺失时返回空权限，受保护接口仍会被拒绝。
             List<String> permissionCodes = getPermissionCodes(userId);
             List<SimpleGrantedAuthority> authorities = permissionCodes.stream()
                     .map(SimpleGrantedAuthority::new)
@@ -61,8 +66,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             LoginUserContext principal = new LoginUserContext(userId, username, roleCodes, permissionCodes);
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(principal, null, authorities);
+            // 后续 @PreAuthorize 和 SecurityUtils 都从这个上下文读取当前用户及其权限。
             SecurityContextHolder.getContext().setAuthentication(authentication);
         } catch (JwtException | IllegalArgumentException ex) {
+            // 无效、篡改或过期的 accessToken 不建立登录态；后续由安全配置返回未认证响应。
             SecurityContextHolder.clearContext();
         }
 
@@ -83,6 +90,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         if (!StringUtils.hasText(permissionJson)) {
             return List.of();
         }
+        // Redis 中以 JSON 数组保存权限码，反序列化后直接转换为 Spring Security authority。
         return objectMapper.readValue(permissionJson, new TypeReference<List<String>>() {
         });
     }

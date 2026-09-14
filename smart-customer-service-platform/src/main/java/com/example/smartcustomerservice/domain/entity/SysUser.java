@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("sys_user")
+// SysUser 属于智能客服平台基础代码。
 public class SysUser {
 
     @TableId(type = IdType.AUTO)

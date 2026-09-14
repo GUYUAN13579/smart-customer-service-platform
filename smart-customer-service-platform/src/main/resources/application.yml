@@ -4,6 +4,12 @@ server:
     context-path: /
 
 spring:
+  profiles:
+    active: local
+
+  config:
+    import: optional:classpath:ai-prompts.yml
+
   application:
     name: smart-customer-service-platform
 
@@ -36,11 +42,30 @@ spring:
     username: ${RABBITMQ_USERNAME:guest}
     password: ${RABBITMQ_PASSWORD:guest}
     virtual-host: ${RABBITMQ_VIRTUAL_HOST:/}
+    listener:
+      simple:
+        # 所有 profile 保持一致：主 SLA 消费失败后有限重试，耗尽后由死信队列收口。
+        default-requeue-rejected: false
+        retry:
+          enabled: true
+          max-attempts: 3
+          initial-interval: 1000
+          multiplier: 2
+          max-interval: 10000
 
   ai:
     openai:
-      base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+      base-url: ${OPENAI_BASE_URL:https://ws-963ni3hyruyfnukl.cn-beijing.maas.aliyuncs.com/compatible-mode}
       api-key: ${OPENAI_API_KEY:}
+      chat:
+        options:
+          model: ${OPENAI_CHAT_MODEL:qwen3.5-omni-plus-2026-03-15}
+          temperature: ${OPENAI_TEMPERATURE:0.2}
+      embedding:
+        options:
+          model: ${OPENAI_EMBEDDING_MODEL:qwen3.7-text-embedding}
+          dimensions: ${OPENAI_EMBEDDING_DIMENSIONS:1024}
+          encoding-format: ${OPENAI_EMBEDDING_ENCODING_FORMAT:float}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -95,3 +120,10 @@ app:
     secret-key: ${MINIO_SECRET_KEY:minioadmin}
     bucket: ${MINIO_BUCKET:smart-customer-service}
     public-url: ${MINIO_PUBLIC_URL:http://localhost:9000}
+  knowledge:
+    index:
+      name: ${KNOWLEDGE_ES_INDEX:knowledge_chunk_v1}
+      vector-dimensions: ${KNOWLEDGE_VECTOR_DIMENSIONS:1024}
+      auto-retry-enabled: ${KNOWLEDGE_INDEX_AUTO_RETRY_ENABLED:true}
+      auto-retry-initial-delay-ms: ${KNOWLEDGE_INDEX_AUTO_RETRY_INITIAL_DELAY_MS:60000}
+      auto-retry-max-delay-ms: ${KNOWLEDGE_INDEX_AUTO_RETRY_MAX_DELAY_MS:900000}

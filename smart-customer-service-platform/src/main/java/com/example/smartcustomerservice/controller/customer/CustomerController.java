@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping(CommonConstants.API_PREFIX + "/customers")
+// CustomerController 属于智能客服平台基础代码。
 public class CustomerController {
 
     private final CustomerService customerService;

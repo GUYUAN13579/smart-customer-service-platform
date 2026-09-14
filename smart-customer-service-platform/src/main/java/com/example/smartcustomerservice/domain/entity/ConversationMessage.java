@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @TableName("conversation_message")
+// ConversationMessage 属于智能客服平台基础代码。
 public class ConversationMessage {
 
     @TableId(type = IdType.AUTO)

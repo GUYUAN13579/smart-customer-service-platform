@@ -15,6 +15,7 @@ import java.util.Date;
 import java.util.List;
 
 @Component
+// JwtTokenProvider 属于智能客服平台基础代码。
 public class JwtTokenProvider {
 
     private final SecretKey secretKey;
@@ -42,6 +43,7 @@ public class JwtTokenProvider {
         Date now = new Date();
         Date expireAt = new Date(now.getTime() + expireSeconds * 1000);
 
+        // tokenType 是 accessToken 与 refreshToken 的边界，过滤器只接受前者建立登录态。
         return Jwts.builder()
                 .subject(String.valueOf(userId))
                 .claim("username", username)
@@ -54,6 +56,7 @@ public class JwtTokenProvider {
     }
 
     public Claims parseToken(String token) {
+        // 解析时会同时校验签名和 expiration；校验失败由调用方按未登录或令牌失效处理。
         return Jwts.parser()
                 .verifyWith(secretKey)
                 .build()

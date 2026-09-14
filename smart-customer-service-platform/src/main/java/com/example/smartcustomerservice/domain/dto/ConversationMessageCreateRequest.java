@@ -6,6 +6,7 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 
+// ConversationMessageCreateRequest 属于智能客服平台基础代码。
 public class ConversationMessageCreateRequest {
 
     @NotBlank(message = "发送方类型不能为空")

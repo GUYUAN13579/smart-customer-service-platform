@@ -2,6 +2,7 @@ package com.example.smartcustomerservice.security;
 
 import java.util.List;
 
+// LoginUserContext 属于智能客服平台基础代码。
 public class LoginUserContext {
 
     private Long userId;

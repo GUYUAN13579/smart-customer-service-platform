@@ -2,14 +2,22 @@ package com.example.smartcustomerservice.controller.conversation;
 
 import com.example.smartcustomerservice.common.constants.CommonConstants;
 import com.example.smartcustomerservice.common.result.ApiResult;
+import com.example.smartcustomerservice.domain.dto.AiAutoReplyRequest;
+import com.example.smartcustomerservice.domain.dto.AiTicketDraftRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationCreateRequest;
+import com.example.smartcustomerservice.domain.dto.ConversationManualTransferRequest;
 import com.example.smartcustomerservice.domain.dto.ConversationMessageCreateRequest;
+import com.example.smartcustomerservice.domain.vo.AiAutoReplyVO;
+import com.example.smartcustomerservice.domain.vo.AiTicketDraftVO;
 import com.example.smartcustomerservice.domain.vo.FileContentVO;
 import com.example.smartcustomerservice.domain.vo.ConversationMessageVO;
 import com.example.smartcustomerservice.domain.vo.ConversationSessionVO;
 import com.example.smartcustomerservice.domain.vo.FileResourceVO;
+import com.example.smartcustomerservice.domain.vo.TicketVO;
+import com.example.smartcustomerservice.service.ai.AiService;
 import com.example.smartcustomerservice.service.conversation.ConversationService;
 import com.example.smartcustomerservice.service.file.FileResourceService;
+import com.example.smartcustomerservice.service.ticket.TicketService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -35,15 +43,22 @@ import java.util.List;
 @Validated
 @RestController
 @RequestMapping(CommonConstants.API_PREFIX + "/customer-test/conversations")
+// CustomerTestConversationController 属于智能客服平台基础代码。
 public class CustomerTestConversationController {
 
     private final ConversationService conversationService;
     private final FileResourceService fileResourceService;
+    private final AiService aiService;
+    private final TicketService ticketService;
 
     public CustomerTestConversationController(ConversationService conversationService,
-                                              FileResourceService fileResourceService) {
+                                              FileResourceService fileResourceService,
+                                              AiService aiService,
+                                              TicketService ticketService) {
         this.conversationService = conversationService;
         this.fileResourceService = fileResourceService;
+        this.aiService = aiService;
+        this.ticketService = ticketService;
     }
 
     @Operation(summary = "用户端创建会话")
@@ -70,6 +85,27 @@ public class CustomerTestConversationController {
                                                         @Valid @RequestBody ConversationMessageCreateRequest request) {
         request.setSenderType("CUSTOMER");
         return ApiResult.success(conversationService.sendMessage(id, request));
+    }
+
+    @Operation(summary = "用户端测试 AI 自动回复")
+    @PostMapping("/{id}/auto-reply")
+    public ApiResult<AiAutoReplyVO> autoReply(@NotNull(message = "会话ID不能为空") @PathVariable Long id,
+                                              @Valid @RequestBody(required = false) AiAutoReplyRequest request) {
+        return ApiResult.success(aiService.autoReply(id, request));
+    }
+
+    @Operation(summary = "用户端测试 AI 工单草稿")
+    @PostMapping("/{id}/ticket-draft")
+    public ApiResult<AiTicketDraftVO> generateTicketDraft(@NotNull(message = "会话ID不能为空") @PathVariable Long id,
+                                                          @Valid @RequestBody(required = false) AiTicketDraftRequest request) {
+        return ApiResult.success(aiService.generateTicketDraft(id, request));
+    }
+
+    @Operation(summary = "用户端测试转人工")
+    @PostMapping("/{id}/manual-transfer")
+    public ApiResult<TicketVO> manualTransfer(@NotNull(message = "会话ID不能为空") @PathVariable Long id,
+                                              @Valid @RequestBody(required = false) ConversationManualTransferRequest request) {
+        return ApiResult.success(ticketService.manualTransfer(id, request));
     }
 
     @Operation(summary = "用户端上传图片")

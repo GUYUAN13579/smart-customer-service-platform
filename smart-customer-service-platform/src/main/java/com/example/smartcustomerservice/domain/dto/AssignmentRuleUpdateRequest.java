@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+// AssignmentRuleUpdateRequest 属于智能客服平台基础代码。
 public class AssignmentRuleUpdateRequest {
 
     private Long id;

@@ -24,6 +24,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
+// FileResourceServiceImpl 属于智能客服平台基础代码。
 public class FileResourceServiceImpl implements FileResourceService {
 
     private final MinioClient minioClient;
@@ -76,6 +77,7 @@ public class FileResourceServiceImpl implements FileResourceService {
             throw new BusinessException(ResultCode.NOT_FOUND, "文件不存在");
         }
 
+        // 文件二进制始终从 MinIO 读取；数据库只保存对象路径和展示所需的元数据。
         try (var inputStream = minioClient.getObject(
                 GetObjectArgs.builder()
                         .bucket(minioProperties.getBucket())
@@ -95,6 +97,7 @@ public class FileResourceServiceImpl implements FileResourceService {
         if(file == null || file.isEmpty())
             throw new BusinessException(ResultCode.FILE_NOT_EXIST, "文件不存在");
 
+        // 用目录日期、随机 UUID 和清理后的原始文件名生成对象名，降低覆盖与路径穿越风险。
         String datePath = LocalDate.now()
                 .format(DateTimeFormatter.ofPattern("yyyy/MM/dd"));
         String uuid = UUID.randomUUID().toString().replace("-", "");
@@ -104,6 +107,7 @@ public class FileResourceServiceImpl implements FileResourceService {
                 : originalName.replaceAll("[\\\\/]", "_");
         String objectName = String.format("%s/%s/%s-%s", directory, datePath, uuid, safeOriginalName);
 
+        // 首次上传自动建桶，后续上传直接复用同一业务桶。
         try {
             boolean flag = minioClient.bucketExists(
                     BucketExistsArgs.builder()
@@ -119,6 +123,7 @@ public class FileResourceServiceImpl implements FileResourceService {
             throw new BusinessException(ResultCode.INTERNAL_SERVER_ERROR, "初始化文件存储失败");
         }
 
+        // 先写入对象存储，再写入文件元数据；调用方通过返回的 fileId 关联会话消息。
         try {
             minioClient.putObject(
                     PutObjectArgs.builder().bucket(minioProperties.getBucket())
@@ -147,6 +152,7 @@ public class FileResourceServiceImpl implements FileResourceService {
     }
 
     private Long resolveUploaderId(Long uploaderId) {
+        // 系统内部调用可显式传上传人，普通接口调用则以安全上下文中的当前用户为准。
         return uploaderId != null ? uploaderId : SecurityUtils.getCurrentUserId();
     }
 

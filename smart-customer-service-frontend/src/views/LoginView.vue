@@ -26,6 +26,7 @@
 </template>
 
 <script setup>
+// LoginView.vue 渲染对应的业务工作台页面。
 import { reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { authApi } from '../api/auth';

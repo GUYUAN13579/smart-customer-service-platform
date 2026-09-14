@@ -84,52 +84,59 @@
 - 活跃会话上下文可以缓存到 Redis。
 - 后续 AI 问答和人工接管都依赖会话中心。
 
-## 5. AI 工单草稿
+## 5. AI 自动回复与转人工工单
 
-目标：把用户自然语言问题转成结构化工单草稿。
+目标：先由 AI 自动回复用户问题；当用户不满意或主动要求人工时，系统创建待审核工单，并由 AI 填充标准化工单字段。
 
 接口：
 
 - `POST /api/v1/ai/chat`
-- `POST /api/v1/ai/ticket-draft`
+- `POST /api/v1/ai/conversations/{sessionId}/auto-reply`
+- `POST /api/v1/conversations/{sessionId}/manual-transfer`
+- `POST /api/v1/ai/conversations/{sessionId}/ticket-draft`
 
 主要能力：
 
-- AI 会话问答。
+- AI 自动回复。
 - 意图识别。
+- 转人工识别。
 - 优先级建议。
-- 知识库检索。
-- 生成工单草稿。
+- 生成待审核工单的标准化字段。
+- 区分用户原始诉求和 AI 标准化摘要。
 - 记录 AI 工具调用日志。
 
 注意点：
 
-- AI 生成结果只能作为草稿，不建议直接创建正式工单。
-- 低置信度时应提示转人工。
+- AI 不直接决定工单审核结果和派单结果，只提供建议字段。
+- 工单创建、审核、派单和状态流转必须由后端业务代码控制。
+- 转人工后创建的工单状态建议为 `PENDING_REVIEW`。
+- 低置信度、知识库无命中、用户主动要求人工时应进入转人工流程。
 - 需要记录 `ai_tool_call_log`，方便面试时讲审计链路。
 
-## 6. 工单创建 / 查询
+## 6. 工单审核 / 查询
 
-目标：完成工单主流程的第一阶段。
+目标：完成待审核工单的审核、查询和详情展示。
 
 接口：
 
-- `POST /api/v1/tickets`
 - `GET /api/v1/tickets`
 - `GET /api/v1/tickets/{id}`
+- `PUT /api/v1/tickets/{id}/review`
 
 主要能力：
 
-- 从 AI 草稿或人工输入创建工单。
 - 分页查询工单。
-- 查看工单详情。
+- 查看待审核工单详情。
+- 审核员查看用户原始诉求和 AI 标准化摘要。
+- 审核员修改标题、描述、分类、优先级、建议处理动作。
+- 审核通过或驳回。
 - 写入工单事件 `ticket_event`。
 - 写入审计日志 `audit_log`。
 
 注意点：
 
-- 创建工单建议支持 `Idempotency-Key` 防重复提交。
-- 工单状态先从 `NEW` 开始。
+- 转人工生成的工单状态先从 `PENDING_REVIEW` 开始。
+- 审核通过后进入 `WAITING_ASSIGN` 或直接进入 `ASSIGNED`。
 - 工单详情最好包含客户、会话、事件记录等信息。
 
 ## 7. 派单规则真正参与派单

@@ -26,6 +26,7 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Service
+// LoginServiceImpl 属于智能客服平台基础代码。
 public class LoginServiceImpl implements LoginService {
     private final SysUserMapper sysUserMapper;
     private final SysRoleMapper sysRoleMapper;
@@ -64,7 +65,8 @@ public class LoginServiceImpl implements LoginService {
     public LoginUserVO login(LoginRequest loginRequest) {
         String username = loginRequest.getUsername();
         String password = loginRequest.getPassword();
-        //查询sys_user表，比对登录信息是否正确
+        // 先按用户名查询账号，再使用 BCrypt matches 比较密码；不能对明文密码再次 encode 后查询，
+        // 因为 BCrypt 每次编码都会产生不同盐值。
         SysUser user = sysUserMapper.selectOne(
                 new LambdaQueryWrapper<SysUser>()
                         .eq(SysUser::getUsername, username)
@@ -80,7 +82,7 @@ public class LoginServiceImpl implements LoginService {
             throw new BusinessException(ResultCode.USER_DISABLED);
         }
 
-        //查询sys_role和sys_user_role表，获取用户角色信息
+        // 用户、角色、权限采用多对多关联。这里只加载启用角色，避免已禁用角色继续获得权限。
         List<SysUserRole> userRoles = sysUserRoleMapper.selectList(
                 new LambdaQueryWrapper<SysUserRole>()
                         .eq(SysUserRole::getUserId, user.getId())
@@ -106,7 +108,7 @@ public class LoginServiceImpl implements LoginService {
                 .map(SysRole::getId)
                 .toList();
 
-        //根据roleCodes查询sys_role_permission表获取权限列表
+        // 权限最终以 permissionCode 表示，既用于前端菜单/按钮控制，也用于后端 @PreAuthorize 鉴权。
         List<SysRolePermission> rolePermissions = roles.isEmpty()
                 ? List.of()
                 : sysRolePermissionMapper.selectList(
@@ -129,11 +131,12 @@ public class LoginServiceImpl implements LoginService {
                 .map(SysPermission::getPermissionCode)
                 .toList();
 
-        //获取accessToken和refreshToken
+        // accessToken 是短期业务凭证；refreshToken 是长期换取凭证，二者必须带不同 tokenType。
         String accessToken = jwtTokenProvider.createAccessToken(user.getId(), user.getUsername(), roleCodes);
         String refreshToken = jwtTokenProvider.createRefreshToken(user.getId(), user.getUsername());
 
-        //把token和权限放到redis里，方便后续使用
+        // 将 refreshToken 和权限缓存分别存入 Redis：前者支持主动登出与刷新校验，
+        // 后者让 JWT 过滤器无需在每个请求中重复查库。
         String permissionJson;
         try {
             permissionJson = objectMapper.writeValueAsString(permissionCodes);
@@ -186,6 +189,7 @@ public class LoginServiceImpl implements LoginService {
 
     @Override
     public RefreshTokenVO refresh(String refreshToken) {
+        // 刷新时同时验证 JWT 签名/类型和 Redis 中的最新值，旧 refreshToken 在重新登录或登出后失效。
         if (!jwtTokenProvider.isRefreshToken(refreshToken)) {
             throw new BusinessException(ResultCode.TOKEN_INVALID);
         }
@@ -262,6 +266,7 @@ public class LoginServiceImpl implements LoginService {
             throw new RuntimeException(e);
         }
 
+        // 刷新 accessToken 时重新加载角色和权限，确保权限调整会在下一次刷新后生效。
         String accessToken = jwtTokenProvider.createAccessToken(userId, username, roleCodes);
         String permissionKey = RedisKeyConstants.format(RedisKeyConstants.USER_PERMISSION, userId);
         stringRedisTemplate.opsForValue().set(
@@ -287,6 +292,8 @@ public class LoginServiceImpl implements LoginService {
         }
         String refreshTokenKey = RedisKeyConstants.format(RedisKeyConstants.LOGIN_REFRESH_TOKEN, userId);
         String permissionKey = RedisKeyConstants.format(RedisKeyConstants.USER_PERMISSION, userId);
+        // JWT 自身无状态，删除 Redis 中的 refreshToken 才能实现主动登出；
+        // 同时删除权限缓存，避免下一位使用该账号时读取旧权限。
         stringRedisTemplate.delete(refreshTokenKey);
         stringRedisTemplate.delete(permissionKey);
         SecurityContextHolder.clearContext();

@@ -1,3 +1,4 @@
+// conversations.js 集中封装当前后端模块的前端请求。
 import { request, toQuery } from './request';
 
 export const conversationApi = {
@@ -22,7 +23,13 @@ export const conversationApi = {
   releaseTakeOver(id) {
     return request(`/api/v1/conversations/${id}/release-take-over`, { method: 'POST' });
   },
+  manualTransfer(id, data = {}) {
+    return request(`/api/v1/conversations/${id}/manual-transfer`, { method: 'POST', body: data });
+  },
   close(id, data = {}) {
     return request(`/api/v1/conversations/${id}/close`, { method: 'POST', body: data });
+  },
+  resolve(id, data = {}) {
+    return request(`/api/v1/conversations/${id}/resolve`, { method: 'POST', body: data });
   }
 };

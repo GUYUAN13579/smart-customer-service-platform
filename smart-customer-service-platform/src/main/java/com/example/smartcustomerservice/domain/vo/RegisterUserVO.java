@@ -2,6 +2,7 @@ package com.example.smartcustomerservice.domain.vo;
 
 import java.time.LocalDateTime;
 
+// RegisterUserVO 属于智能客服平台基础代码。
 public class RegisterUserVO {
 
     private Long id;

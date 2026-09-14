@@ -1,3 +1,4 @@
+// index.js 定义前端路由与访问流程。
 import { createRouter, createWebHistory } from 'vue-router';
 import { authStore } from '../stores/authStore';
 import LoginView from '../views/LoginView.vue';
@@ -11,6 +12,8 @@ import AiWorkbenchView from '../views/AiWorkbenchView.vue';
 import CustomerView from '../views/CustomerView.vue';
 import ConversationView from '../views/ConversationView.vue';
 import CustomerChatTestView from '../views/CustomerChatTestView.vue';
+import NotificationView from '../views/NotificationView.vue';
+import SkillGroupView from '../views/SkillGroupView.vue';
 
 const router = createRouter({
   history: createWebHistory(),
@@ -27,10 +30,12 @@ const router = createRouter({
         { path: 'dashboard', name: 'dashboard', component: DashboardView },
         { path: 'tickets', name: 'tickets', component: TicketView },
         { path: 'assignment-rules', name: 'assignment-rules', component: AssignmentRuleView },
-        { path: 'knowledge', name: 'knowledge', component: KnowledgeView },
+        { path: 'knowledge', name: 'knowledge', component: KnowledgeView, meta: { roles: ['ADMIN', 'SUPERVISOR'] } },
         { path: 'ai-workbench', name: 'ai-workbench', component: AiWorkbenchView },
         { path: 'conversations', name: 'conversations', component: ConversationView },
-        { path: 'customers', name: 'customers', component: CustomerView }
+        { path: 'customers', name: 'customers', component: CustomerView },
+        { path: 'notifications', name: 'notifications', component: NotificationView },
+        { path: 'skill-groups', name: 'skill-groups', component: SkillGroupView, meta: { roles: ['ADMIN', 'SUPERVISOR'] } }
       ]
     }
   ]
@@ -42,6 +47,13 @@ router.beforeEach((to) => {
   }
   if ((to.name === 'login' || to.name === 'register') && authStore.isLoggedIn()) {
     return { name: 'dashboard' };
+  }
+  if (to.meta.roles?.length) {
+    const roleCodes = authStore.getUser()?.roleCodes;
+    const roles = Array.isArray(roleCodes) ? roleCodes : String(roleCodes || '').split(',').map((item) => item.trim());
+    if (!to.meta.roles.some((role) => roles.includes(role))) {
+      return { name: 'dashboard' };
+    }
   }
   return true;
 });

@@ -3,6 +3,7 @@ package com.example.smartcustomerservice.common.exception;
 import com.example.smartcustomerservice.common.result.ErrorCode;
 import com.example.smartcustomerservice.common.result.ResultCode;
 
+// BusinessException 属于智能客服平台基础代码。
 public class BusinessException extends RuntimeException {
 
     private final Integer code;

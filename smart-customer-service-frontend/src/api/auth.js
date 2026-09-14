@@ -1,3 +1,4 @@
+// auth.js 集中封装当前后端模块的前端请求。
 import { request } from './request';
 
 export const authApi = {

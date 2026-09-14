@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import java.time.LocalDateTime;
 
 @TableName("audit_log")
+// AuditLog 属于智能客服平台基础代码。
 public class AuditLog {
 
     @TableId(type = IdType.AUTO)

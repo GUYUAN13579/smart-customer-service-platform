@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+// CustomerCreateRequest 属于智能客服平台基础代码。
 public class CustomerCreateRequest {
 
     @Size(max = 32, message = "客户编号最多 32 位")

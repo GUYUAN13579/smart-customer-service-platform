@@ -6,6 +6,7 @@ import com.example.smartcustomerservice.domain.dto.CustomerQueryRequest;
 import com.example.smartcustomerservice.domain.dto.CustomerUpdateRequest;
 import com.example.smartcustomerservice.domain.vo.CustomerVO;
 
+// CustomerService 属于智能客服平台基础代码。
 public interface CustomerService {
 
     CustomerVO createCustomer(CustomerCreateRequest request);
